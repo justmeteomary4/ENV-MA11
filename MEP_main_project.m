@@ -1,26 +1,26 @@
 %clear;clc;close
 %% Model parameters
 T = 298.; % absolute temperature [Kelvins], +25 C
-p = 920.; % total air pressure [hPa]
-kB = 1.380658*10^(-19); % Boltzmann's constant [cm-3 hPa K-1 molec-1]
+p = 1013.; % total air pressure [hPa]
+kB = 1.380658*1e-19; % Boltzmann's constant [cm-3 hPa K-1 molec-1]
 t0 = 0;
 nt = 2000; % simulation time [s]
 dt = 10; % time step [s]
 nsteps = numel(t0:dt:nt); % number of time steps
-scheme = 2; % 1 - Forward Euler (nt = 1 s, dt = 10^(-4) s); 2 - Backward Euler (nt = 2000 s, dt = 10 s); 3 - MIE
+scheme = 3; % 1 - Forward Euler (nt = 1 s, dt = 1e-4) s); 2 - Backward Euler (nt = 2000 s, dt = 10 s); 3 - MIE
 Np = 30; % 5 for large set of reastions, 30-50 for small set of reactions
 itermax = 100; % empirically derived reosanoble ilimit of number of iterations
 %% Initial concentrations
 O3 = 0.; % molec cm-3
 M = p/(kB*T);
-O2 = 0.2095*M; % assuming mixiting ratio of O2 = 0.2095 and air is dry
+O2 = 0.2095*M; % assuming mixiting ratio of O2 = 0.2095 and the air is dry
 O = 0.;
 NO = 1e12;
 NO2 = 1e10;
 %% Rate coefficients
-k1 = 1.8*10^(-12)*exp(-1370/T); % NO+O3 -> NO2+O2
-J = 1.7*10^(-2);                        % NO2+hv -> NO+O, <420 nm
-k3 = 1.4*10^(3)*exp(1175/T);     % O+O2+M -> O3+M; simply O -> O3
+k1 = 1.4*1e3*exp(1175/T); % O -> O3, this coefficient has already been multiplied by O2 and M
+J = 1.7*1e-2; % NO2+hv -> NO+O, <420 nm
+k3 = 1.8*1e-12*exp(-1370/T); % NO+O3 -> NO2+O2
 %% Numerical solution
 switch scheme
     case 1 % Forward Euler
@@ -30,17 +30,17 @@ switch scheme
         i = 0;
 %         for t = t0:dt:nt % taking O2 and M concentrations into account
 %             i = i + 1;
-%             NOforw(i+1) = NOforw(i)+dt*(J*NO2forw(i) - k1*NOforw(i)*O3forw(i));
 %             NO2forw(i+1) = NO2forw(i)+dt*(k1*NOforw(i)*O3forw(i) - J*NO2forw(i));
+%             NOforw(i+1) = NOforw(i)+dt*(J*NO2forw(i) - k1*NOforw(i)*O3forw(i));
 %             Oforw(i+1) = Oforw(i) + dt*(J*NO2forw(i) - k3*Oforw(i)*O2*M);
 %             O3forw(i+1) = O3forw(i)+dt*(k3*Oforw(i)*O2*M - k1*NOforw(i)*O3forw(i));
 %         end
         for t = t0:dt:nt % do not taking O2 and M concentrations into account
             i = i + 1;
-            NOforw(i+1) = NOforw(i)+dt*(J*NO2forw(i) - k1*NOforw(i)*O3forw(i));
-            NO2forw(i+1) = NO2forw(i)+dt*(k1*NOforw(i)*O3forw(i) - J*NO2forw(i));
-            Oforw(i+1) = Oforw(i) + dt*(J*NO2forw(i) - k3*Oforw(i));
-            O3forw(i+1) = O3forw(i)+dt*(k3*Oforw(i) - k1*NOforw(i)*O3forw(i));
+            NO2forw(i+1) = NO2forw(i)+dt*(k3*NOforw(i)*O3forw(i) - J*NO2forw(i));
+            NOforw(i+1) = NOforw(i)+dt*(J*NO2forw(i) - k3*NOforw(i)*O3forw(i));
+            Oforw(i+1) = Oforw(i) + dt*(J*NO2forw(i) - k1*Oforw(i));
+            O3forw(i+1) = O3forw(i)+dt*(k1*Oforw(i) - k3*NOforw(i)*O3forw(i));
         end
     case 2 % Backward Euler
             % Preallocating space for variables
@@ -49,10 +49,10 @@ switch scheme
             i = 0;
             for t = t0:dt:nt
                 i = i+1;
-                NOback(i+1) = (NOback(i) + dt*J*NO2back(i))/(1 + dt*k1*O3back(i));
-                NO2back(i+1) = (NO2back(i) + dt*k1*NOback(i)*O3back(i))/(1 + dt*J);
-                Oback(i+1) = (Oback(i) + dt*J*NO2back(i))/(1 + dt*k3);
-                O3back(i+1) = (O3back(i) + dt*k3*Oback(i))/(1 + dt*k1*NOback(i));
+                NO2back(i+1) = (NO2back(i) + dt*k3*NOback(i)*O3back(i))/(1 + dt*J);
+                NOback(i+1) = (NOback(i) + dt*J*NO2back(i))/(1 + dt*k3*O3back(i));
+                Oback(i+1) = (Oback(i) + dt*J*NO2back(i))/(1 + dt*k1);
+                O3back(i+1) = (O3back(i) + dt*k1*Oback(i))/(1 + dt*k3*NOback(i));
             end
     case 3 % Multistep implicit–explicit (MIE)
         % Preallocating space for variables
@@ -67,7 +67,7 @@ switch scheme
         Nmie(1,:) =  [NO2 NO O O3];
         %% Step 2
         % Estimate reaction rates by multiplying rate coeffcients by Backward Euler concentrations
-        % Skipped
+        % Skipped, go directly to production and loss rates
 %         R1 = k1*NOmieback(1)*O3mieback(1);
 %         R2 = J*NO2mieback(1);
 %         R3 = k3*Omieback(1);
@@ -85,15 +85,15 @@ switch scheme
                     error(['Iterations do not converge for the time step ' num2str(i)])
                 end
                 % Production rates for each species
-                P(i,1) = k1*Nmieback(2)*Nmieback(4); % NO2
+                P(i,1) = k3*Nmieback(2)*Nmieback(4); % NO2
                 P(i,2) = J*Nmieback(1); % NO
                 P(i,3) = J*Nmieback(1); % O
-                P(i,4) = k3*Nmieback(3); % O3
+                P(i,4) = k1*Nmieback(3); % O3
                 % Implicit loss coef?cients for each species
                 L(i,1) = J; % NO2
-                L(i,2) = k1*Nmieback(4); % NO
-                L(i,3) = k3; % O
-                L(i,4) = k1*Nmieback(2); % O3
+                L(i,2) = k3*Nmieback(4); % NO
+                L(i,3) = k1; % O
+                L(i,4) = k3*Nmieback(2); % O3
                 %% Step 4 and 5
                 % Calculate backward and forward Euler concentrations for all species at iteration m +1
                 for s = 1:4
@@ -103,21 +103,20 @@ switch scheme
                 %% Step 6
                 % Check convergence
                 if all(Nmieforw(:) >= 0)
-                    np =np +1;
+                    np =np + 1;
                 else
                     np = 0;
                 end
-                if i > 2 % convergence occurs only without checking on the first time step in a loop
-                    for s = 1:4
-                        % Limit current backward Euler concentrations
-                        Nmieback(s) = min(Nmieback(s), Nmiemax(s));
-                        % Update maximum backward Euler concentrations
-                        Nmiemax(s) = max(Nmieback(s), Nmie(i-1,s));
-                    end
+                work = Nmieback; % working variable
+                for s = 1:4
+                    % Limit current backward Euler concentrations
+                    Nmieback(s) = min(Nmieback(s), Nmiemax(s));
+                    % Update maximum backward Euler concentrations
+                    Nmiemax(s) = max(work(s), Nmie(i-1,s));
                 end
             end
             %% Step 7
-            % The ?nal concentrations
+            % The final concentrations
             Nmie(i,:) = Nmieback(:);
         end
 end
