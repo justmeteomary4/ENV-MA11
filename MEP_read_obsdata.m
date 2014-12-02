@@ -59,7 +59,7 @@ ndays = 38; % total number of days of observations
 % Set dates array
 dates(1,1:9) = 22:30; dates(2,1:9) = 4;
 dates(1,10:38) = 1:29; dates(2,10:38) = 5;
-% Start dates's indices
+% Start dates indices
 ibegc1 = 1441; % for jNO2
 ibegc2 = 5108; % for NO2, NO, O3
 ibegm = 16129; % 16129 22 Apr 00:00:00 (111.5)
@@ -75,38 +75,46 @@ switch plottype
     case 2
         for i = 1:ndays
             figure(110);
-            subplot(2,2,1); plot(NO2((ibegc2+1440*(i-1)):(ibegc2+1440*i)),'color',cvec(i,:)); %hold on;
+            subplot(2,2,1); plot(NO2((ibegc2+1440*(i-1)):(ibegc2+1439*i)),'color',cvec(i,:)); %hold on;
             title('NO2'); xlabel('min'); ylabel('ppbv'); ylim([0 max(NO2(:))]);
             
-            subplot(2,2,2); plot(NO((ibegc2+1440*(i-1)):(ibegc2+1440*i)),'color',cvec(i,:)); %hold on;
+            subplot(2,2,2); plot(NO((ibegc2+1440*(i-1)):(ibegc2+1439*i)),'color',cvec(i,:)); %hold on;
             title('NO'); xlabel('min'); ylabel('ppbv'); ylim([0 max(NO(:))]);
             
-            subplot(2,2,3); plot(jNO2((ibegc1+1440*(i-1)):(ibegc1+1440*i)),'color',cvec(i,:)); %hold on;
+            subplot(2,2,3); plot(jNO2((ibegc1+1440*(i-1)):(ibegc1+1439*i)),'color',cvec(i,:)); %hold on;
             title('jNO2'); xlabel('min'); ylabel('1/s'); ylim([0 max(jNO2(:))]); 
             
-            subplot(2,2,4); plot(O3((ibegc2+1440*(i-1)):(ibegc2+1440*i)),'color',cvec(i,:)); %hold on;
+            subplot(2,2,4); plot(O3((ibegc2+1440*(i-1)):(ibegc2+1439*i)),'color',cvec(i,:)); %hold on;
             title('O3'); xlabel('min'); ylabel('ppbv'); ylim([0 max(O3(:))]);
             
             imgname= strcat(outdir,'/','obsdata_chem_',datestr([2004,dates(2,i),dates(1,i),0,0,0],'mmm dd'),'.png');
             suptitle(datestr([2004,dates(2,i),dates(1,i),0,0,0],'mmm dd'));
             set(gcf,'visible','off')
-            print(gcf,'-dpng','-r300',imgname);
+%             print(gcf,'-dpng','-r300',imgname);
             
             figure(111);
-            plot(ta((ibegm+144*(i-1)):(ibegm+144*i)),'color',cvec(i,:)); %hold on;
+            plot(ta((ibegm+144*(i-1)):(ibegm+143*i)),'color',cvec(i,:)); %hold on;
             title(datestr([2004,dates(2,i),dates(1,i),0,0,0],'mmm dd'));
             xlabel('min'); ylabel('Temperature, degrees Celsius'); ylim([min(ta(:)) max(ta(:))]);
             imgname= strcat(outdir,'/','obsdata_meteo_ta_',datestr([2004,dates(2,i),dates(1,i),0,0,0],'mmm dd'),'.png');
             set(gcf,'visible','off')
-            print(gcf,'-dpng','-r300',imgname);
+%             print(gcf,'-dpng','-r300',imgname);
             
             figure(112);
-            plot(ps((ibegm+144*(i-1)):(ibegm+144*i)),'color',cvec(i,:)); %hold on;
+            plot(wspeed((ibegm+144*(i-1)):(ibegm+143*i)),'color',cvec(i,:)); %hold on;
+            title(datestr([2004,dates(2,i),dates(1,i),0,0,0],'mmm dd'));
+            xlabel('min'); ylabel('Wind speed, m/s'); ylim([min(wspeed(:)) max(wspeed(:))]);
+            imgname= strcat(outdir,'/','obsdata_meteo_wspeed_',datestr([2004,dates(2,i),dates(1,i),0,0,0],'mmm dd'),'.png');
+            set(gcf,'visible','off')
+%             print(gcf,'-dpng','-r300',imgname);
+            
+            figure(113);
+            plot(ps((ibegm+144*(i-1)):(ibegm+143*i)),'color',cvec(i,:)); %hold on;
             title(datestr([2004,dates(2,i),dates(1,i),0,0,0],'mmm dd'));
             xlabel('min'); ylabel('Surface air pressure, mbar'); ylim([min(ps(:)) max(ps(:))]);
             imgname= strcat(outdir,'/','obsdata_meteo_ps_',datestr([2004,dates(2,i),dates(1,i),0,0,0],'mmm dd'),'.png');
             set(gcf,'visible','off')
-            print(gcf,'-dpng','-r300',imgname);
+%             print(gcf,'-dpng','-r300',imgname);
             
 %             pause(3)
         end
