@@ -74,48 +74,32 @@ switch plottype
         subplot(2,2,4); plot(O3(5108:59826)); title('O3');
     case 2
         for i = 1:ndays
-            figure(110);
+            figure(109);
             subplot(2,2,1); plot(NO2((ibegc2+1440*(i-1)):(ibegc2+1439*i)),'color',cvec(i,:)); %hold on;
-            title('NO2'); xlabel('min'); ylabel('ppbv'); ylim([0 max(NO2(:))]);
-            
+            title('NO2'); xlabel('min'); ylabel('ppbv'); xlim([0 1440]); ylim([0 max(NO2(:))]);
             subplot(2,2,2); plot(NO((ibegc2+1440*(i-1)):(ibegc2+1439*i)),'color',cvec(i,:)); %hold on;
-            title('NO'); xlabel('min'); ylabel('ppbv'); ylim([0 max(NO(:))]);
-            
+            title('NO'); xlabel('min'); ylabel('ppbv'); xlim([0 1440]); ylim([0 max(NO(:))]);
             subplot(2,2,3); plot(jNO2((ibegc1+1440*(i-1)):(ibegc1+1439*i)),'color',cvec(i,:)); %hold on;
-            title('jNO2'); xlabel('min'); ylabel('1/s'); ylim([0 max(jNO2(:))]); 
-            
+            title('jNO2'); xlabel('min'); ylabel('1/s'); xlim([0 1440]); ylim([0 max(jNO2(:))]); 
             subplot(2,2,4); plot(O3((ibegc2+1440*(i-1)):(ibegc2+1439*i)),'color',cvec(i,:)); %hold on;
-            title('O3'); xlabel('min'); ylabel('ppbv'); ylim([0 max(O3(:))]);
-            
-            imgname= strcat(outdir,'/','obsdata_chem_',datestr([2004,dates(2,i),dates(1,i),0,0,0],'mmm dd'),'.png');
+            title('O3'); xlabel('min'); ylabel('ppbv'); xlim([0 1440]); ylim([0 max(O3(:))]);
+            imgname= strcat(outdir,'/pics_obsdata_chem/','obsdata_chem_',datestr([2004,dates(2,i),dates(1,i),0,0,0],'mmm dd'),'.png');
             suptitle(datestr([2004,dates(2,i),dates(1,i),0,0,0],'mmm dd'));
             set(gcf,'visible','off')
-%             print(gcf,'-dpng','-r300',imgname);
+            print(gcf,'-dpng','-r300',imgname);
             
-            figure(111);
-            plot(ta((ibegm+144*(i-1)):(ibegm+143*i)),'color',cvec(i,:)); %hold on;
-            title(datestr([2004,dates(2,i),dates(1,i),0,0,0],'mmm dd'));
-            xlabel('min'); ylabel('Temperature, degrees Celsius'); ylim([min(ta(:)) max(ta(:))]);
-            imgname= strcat(outdir,'/','obsdata_meteo_ta_',datestr([2004,dates(2,i),dates(1,i),0,0,0],'mmm dd'),'.png');
+            figure(110);
+            subplot(2,2,1); plot(ta((ibegm+144*(i-1)):(ibegm+143*i)),'color',cvec(i,:));
+            title('Air temperature'); xlabel('min'); ylabel('degrees Celsius'); xlim([0 144]); ylim([min(ta(:)) max(ta(:))]);
+            subplot(2,2,2); plot(ps((ibegm+144*(i-1)):(ibegm+143*i)),'color',cvec(i,:));
+            title('Surface air pressure'); xlabel('min'); ylabel('hPa'); xlim([0 144]); ylim([min(ps(:)) max(ps(:))]);
+            subplot(2,2,3); plot(wdir((ibegm+144*(i-1)):(ibegm+143*i)),'color',cvec(i,:));
+            title('Wind direction'); xlabel('min'); ylabel('degrees'); xlim([0 144]); ylim([0 360]);
+            subplot(2,2,4); plot(wspeed((ibegm+144*(i-1)):(ibegm+143*i)),'color',cvec(i,:));
+            title('Wind speed'); xlabel('min'); ylabel('m/s'); xlim([0 144]); ylim([min(wspeed(:)) max(wspeed(:))]);
+            imgname= strcat(outdir,'/pics_obsdata_meteo/','obsdata_meteo_',datestr([2004,dates(2,i),dates(1,i),0,0,0],'mmm dd'),'.png');
+            suptitle(datestr([2004,dates(2,i),dates(1,i),0,0,0],'mmm dd'));
             set(gcf,'visible','off')
-%             print(gcf,'-dpng','-r300',imgname);
-            
-            figure(112);
-            plot(wspeed((ibegm+144*(i-1)):(ibegm+143*i)),'color',cvec(i,:)); %hold on;
-            title(datestr([2004,dates(2,i),dates(1,i),0,0,0],'mmm dd'));
-            xlabel('min'); ylabel('Wind speed, m/s'); ylim([min(wspeed(:)) max(wspeed(:))]);
-            imgname= strcat(outdir,'/','obsdata_meteo_wspeed_',datestr([2004,dates(2,i),dates(1,i),0,0,0],'mmm dd'),'.png');
-            set(gcf,'visible','off')
-%             print(gcf,'-dpng','-r300',imgname);
-            
-            figure(113);
-            plot(ps((ibegm+144*(i-1)):(ibegm+143*i)),'color',cvec(i,:)); %hold on;
-            title(datestr([2004,dates(2,i),dates(1,i),0,0,0],'mmm dd'));
-            xlabel('min'); ylabel('Surface air pressure, mbar'); ylim([min(ps(:)) max(ps(:))]);
-            imgname= strcat(outdir,'/','obsdata_meteo_ps_',datestr([2004,dates(2,i),dates(1,i),0,0,0],'mmm dd'),'.png');
-            set(gcf,'visible','off')
-%             print(gcf,'-dpng','-r300',imgname);
-            
-%             pause(3)
+            print(gcf,'-dpng','-r300',imgname);
         end
 end
