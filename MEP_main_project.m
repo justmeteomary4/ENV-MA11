@@ -1,56 +1,51 @@
-% clear; close all; clc
+clear; close all; clc
+outdir = '../ENV-MA11_project_pics';
 %% Model parameters
 kB = 1.380658*1e-19; % Boltzmann's constant [cm-3 hPa K-1 molec-1]
 t0 = 0;
-nt = 2000; % simulation time [s]
-dt = 10; % time step [s]
+nt = 1; % simulation time [s]
+dt = 1e-4; % time step [s]
 nsteps = numel(t0:dt:nt); % number of time steps
-scheme = 3; % 1 - Forward Euler (nt = 1 s, dt = 1e-4) s); 2 - Backward Euler (nt = 2000 s, dt = 10 s); 3 - MIE
+SCHEME = 1; % 1 - Forward Euler (nt = 1 s, dt = 1e-4) s); 2 - Backward Euler (nt = 2000 s, dt = 10 s); 3 - MIE
 Np = 30; % 5 for large set of reastions, 30-50 for small set of reactions
-itermax = 100; % empirically derived reosanoble ilimit of number of iterations
+itermax = 100; % empirically derived resonable limit of number of iterations
 %% Initial condtions
-experiment  = 2;
-switch experiment
-    case 1 
+EXPERIMENT  = 1;
+switch EXPERIMENT
+    case 1 % test
         T = 298.; % air temperature [Kelvin], ~= 25 degrees Celsius
-        p = 1013.25; % air pressure [hPa], == 1 atm (standard atmosphere)
-        M = p/(kB*T);
-        O2 = 0.2095*M; % assuming O2 mixiting ratio = 0.2095 and the air is dry
-        % Number concentrations [molec cm-3]
+%         p = 1013.25; % air pressure [hPa], == 1 atm (standard atmosphere)
+%         M = p/(kB*T);
+%         O2 = 0.2095*M; % assuming O2 mixiting ratio = 0.2095 and the air is dry
+        jNO2 = 1.7*1e-2; % photolysis rate coefficient
+        % Number densities (concentrations) [molec cm-3]
         O3 = 0.;
         O = 0.;
         NO2 = 1e10; % ~= 400 pptv (mixing ratio)
         NO = 1e12; % ~= 40 ppbv (mixing ratio)
-        jNO2 = 1.7*1e-2;
     case 2 % 27 May 12:00
         [ta,ps,O3_obs,NO2_obs,NO_obs,jNO2_obs] = MEP_get_obsdata(36);
         T = ta(72); disp(['T = ' num2str(T)])
 %         p = ps(72); disp(['p = ' num2str(p)])
+        jNO2 = jNO2_obs(720); disp(['jNO2 = ' num2str(jNO2)])
+        % Number densities (concentrations) [molec cm-3]
         O3 = 0.;%O3_obs(720); disp(['O3 = ' num2str(O3)])
-        O = 0; disp(['O = ' num2str(O)]) % from book 40*1e-9 ppbv
+        O = 0.; disp(['O = ' num2str(O)]) % from book 40*1e-9 ppbv
         NO2 = NO2_obs(720); disp(['NO2 = ' num2str(NO2)])
         NO = NO_obs(720); disp(['NO = ' num2str(NO)])
-        jNO2 = jNO2_obs(720); disp(['jNO2 = ' num2str(jNO2)])
 end
 %% Rate coefficients
 k1 = 1.4*1e3*exp(1175/T); % O -> O3, this coefficient has already been multiplied by O2 and M
 % jNO2 % NO2+hv -> NO+O, <420 nm
 k3 = 1.8*1e-12*exp(-1370/T); % NO+O3 -> NO2+O2
 %% Numerical solution
-switch scheme
+switch SCHEME
     case 1 % Forward Euler
         % Preallocating space for variables
         O3forw(1:nsteps) = NaN; Oforw(1:nsteps) = NaN; NOforw(1:nsteps) = NaN; NO2forw(1:nsteps) = NaN;
         O3forw(1) = O3(1); Oforw(1) = O(1); NOforw(1) = NO(1); NO2forw(1) = NO2(1);
         i = 0;
-%         for t = t0:dt:nt % taking O2 and M concentrations into account
-%             i = i + 1;
-%             NO2forw(i+1) = NO2forw(i)+dt*(k1*NOforw(i)*O3forw(i) - J*NO2forw(i));
-%             NOforw(i+1) = NOforw(i)+dt*(J*NO2forw(i) - k1*NOforw(i)*O3forw(i));
-%             Oforw(i+1) = Oforw(i) + dt*(J*NO2forw(i) - k3*Oforw(i)*O2*M);
-%             O3forw(i+1) = O3forw(i)+dt*(k3*Oforw(i)*O2*M - k1*NOforw(i)*O3forw(i));
-%         end
-        for t = t0:dt:nt % do not taking O2 and M concentrations into account
+        for t = t0:dt:nt
             i = i + 1;
             NO2forw(i+1) = NO2forw(i)+dt*(k3*NOforw(i)*O3forw(i) - jNO2*NO2forw(i));
             NOforw(i+1) = NOforw(i)+dt*(jNO2*NO2forw(i) - k3*NOforw(i)*O3forw(i));
@@ -83,9 +78,6 @@ switch scheme
         %% Step 2
         % Estimate reaction rates by multiplying rate coeffcients by Backward Euler concentrations
         % Skipped, go directly to production and loss rates
-%         R1 = k1*NOmieback(1)*O3mieback(1);
-%         R2 = J*NO2mieback(1);
-%         R3 = k3*Omieback(1);
         %% Step 3
         % Estimate production rates and implicit loss coefficients for each species
         % Time loop
@@ -136,28 +128,66 @@ switch scheme
         end
 end
 %% Plot results
-switch scheme
+switch SCHEME
     case 1
-        figure;
-        end1 = 20;
-        subplot(2,2,1); plot(O3forw(1:end1),'k'); title('O3')
-        subplot(2,2,2); plot(Oforw(1:end1),'k'); title('O')
-        subplot(2,2,3); plot(NOforw(1:end1),'k'); title('NO')
-        subplot(2,2,4); plot(NO2forw(1:end1),'k'); title('NO2')
-        %subplot(2,2,1); plot(t0:dt:nt,O3forw(1:end-1),'b'); title('O3')
-        %subplot(2,2,2); plot(t0:dt:nt,Oforw(1:end-1),'b'); title('O')
-        %subplot(2,2,3); plot(t0:dt:nt,NOforw(1:end-1),'b'); title('NO')
-        %subplot(2,2,4); plot(t0:dt:nt,NO2forw(1:end-1),'b'); title('NO2')
+        switch EXPERIMENT
+            case 1 % test
+                figure; newend = 20;
+                subplot(2,2,1); plot(O3forw(1:newend-1),'k--d','MarkerSize',5); title('O3');
+                xlabel('1e-4 seconds'); ylabel('molecules cm-3'); xlim([0 newend])
+                subplot(2,2,2); plot(Oforw(1:newend),'k--^','MarkerSize',5); title('O');
+                xlabel('1e-4 seconds'); ylabel('molecules cm-3'); xlim([0 newend])
+                subplot(2,2,3); plot(NOforw(1:newend),'k--s','MarkerSize',5); title('NO');
+                xlabel('1e-4 seconds'); ylabel('molecules cm-3'); xlim([0 newend])
+                subplot(2,2,4); plot(NO2forw(1:newend),'k--o','MarkerSize',5); title('NO2');
+                xlabel('1e-4 seconds'); ylabel('molecules cm-3'); xlim([0 newend])
+                imgname= strcat(outdir,'/pics_test/','test_forwEuler','.png');
+%                 set(gcf,'visible','off')
+                print(gcf,'-dpng','-r300',imgname);
+        end
     case 2
-        figure;
-        subplot(2,2,1); plot(NO2back(1:end-1),'b'); title('NO2')
-        subplot(2,2,2); plot(NOback(1:end-1),'b'); title('NO')
-        subplot(2,2,3); plot(Oback(1:end-1),'b'); title('O')
-        subplot(2,2,4); plot(O3back(1:end-1),'b'); title('O3')
+        switch EXPERIMENT
+            case 1 % test
+                figure;
+                subplot(2,2,1); plot(NO2back(1:end-1),'bd','MarkerSize',3); title('NO2');
+                xlabel('seconds'); ylabel('molecules cm-3'); xlim([0 200])
+                subplot(2,2,2); plot(NOback(1:end-1),'b^','MarkerSize',3); title('NO');
+                xlabel('seconds'); ylabel('molecules cm-3'); xlim([0 200])
+                subplot(2,2,3); plot(Oback(1:end-1),'bs','MarkerSize',3); title('O');
+                xlabel('seconds'); ylabel('molecules cm-3'); xlim([0 200])
+                subplot(2,2,4); plot(O3back(1:end-1),'bo','MarkerSize',3); title('O3');
+                xlabel('seconds'); ylabel('molecules cm-3'); xlim([0 200])
+                imgname= strcat(outdir,'/pics_test/','test_backEuler','.png');
+%                 set(gcf,'visible','off')
+                print(gcf,'-dpng','-r300',imgname);
+            case 2
+                figure;
+                subplot(2,2,1); plot(NO2back(1:end-1),'bd','MarkerSize',3); title('NO2');
+                xlabel('seconds'); ylabel('ppbv'); xlim([0 200])
+                subplot(2,2,2); plot(NOback(1:end-1),'b^','MarkerSize',3); title('NO');
+                xlabel('seconds'); ylabel('ppbv'); xlim([0 200])
+                subplot(2,2,3); plot(Oback(1:end-1),'bs','MarkerSize',3); title('O');
+                xlabel('seconds'); ylabel('ppbv'); xlim([0 200])
+                subplot(2,2,4); plot(O3back(1:end-1),'bo','MarkerSize',3); title('O3');
+                xlabel('seconds'); ylabel('ppbv'); xlim([0 200])
+                imgname= strcat(outdir,'/pics_model&obs/','27Apr_backEuler','.png');
+%                 set(gcf,'visible','off')
+                print(gcf,'-dpng','-r300',imgname);
+        end
     case 3
-        figure;
-        subplot(2,2,1); plot(Nmie(1:end-1,1),'r'); title('NO2'); hold on; plot(NO2back(1:end-1),'b'); title('NO2')
-        subplot(2,2,2); plot(Nmie(1:end-1,2),'r'); title('NO'); hold on; plot(NOback(1:end-1),'b'); title('NO')
-        subplot(2,2,3); plot(Nmie(1:end-1,3),'r'); title('O'); hold on; plot(Oback(1:end-1),'b'); title('O')
-        subplot(2,2,4); plot(Nmie(1:end-1,4),'r'); title('O3'); hold on; plot(O3back(1:end-1),'b'); title('O3')
+        switch EXPERIMENT
+            case 1 %test
+                figure;
+                subplot(2,2,1); plot(Nmie(1:end-1,1),'rd','MarkerSize',3); title('NO2'); hold on; plot(NO2back(1:end-1),'bd','MarkerSize',3);
+                xlabel('seconds'); ylabel('molecules cm-3'); xlim([0 200])
+                subplot(2,2,2); plot(Nmie(1:end-1,2),'r^','MarkerSize',3); title('NO'); hold on; plot(NOback(1:end-1),'b^','MarkerSize',3);
+                xlabel('seconds'); ylabel('molecules cm-3'); xlim([0 200])
+                subplot(2,2,3); plot(Nmie(1:end-1,3),'rs','MarkerSize',3); title('O'); hold on; plot(Oback(1:end-1),'bs','MarkerSize',3);
+                xlabel('seconds'); ylabel('molecules cm-3'); xlim([0 200])
+                subplot(2,2,4); plot(Nmie(1:end-1,4),'ro','MarkerSize',3); title('O3'); hold on; plot(O3back(1:end-1),'bo','MarkerSize',3);
+                xlabel('seconds'); ylabel('molecules cm-3'); xlim([0 200])
+                imgname= strcat(outdir,'/pics_test/','test_mie&backEuler','.png');
+%                 set(gcf,'visible','off')
+                print(gcf,'-dpng','-r300',imgname);
+        end
 end
