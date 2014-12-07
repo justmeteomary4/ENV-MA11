@@ -41,16 +41,20 @@ ibegc1 = 1441; % for jNO2
 ibegc2 = 5108; % for NO2, NO, O3
 ibegm = 16129; % 16129 22 Apr 00:00:00 (111.5)
 
-hur = meteo{2}((ibegm+144*(iday-1)):(ibegm+143*iday)); % relative humidity
-ta = meteo{4}((ibegm+144*(iday-1)):(ibegm+143*iday)); % air temperature [C]
-irrad = meteo{6}((ibegm+144*(iday-1)):(ibegm+143*iday)); % irradiance
-netirrad = meteo{8}((ibegm+144*(iday-1)):(ibegm+143*iday)); % net irradiance
-wspeed = meteo{10}((ibegm+144*(iday-1)):(ibegm+143*iday)); % wind speed [m s-1]
-wdir = meteo{12}((ibegm+144*(iday-1)):(ibegm+143*iday)); % wind direction [deg]
-ps = meteo{14}((ibegm+144*(iday-1)):(ibegm+143*iday)); % atmospheric pressure [mbar]
+metind = ibegm+144*(iday-1):ibegm+144*iday-1; % for meteo
+chemind1 = ibegc1+1440*(iday-1):ibegc1+1440*iday-1; % for jNO2
+chemind2 = ibegc2+1440*(iday-1):ibegc2+1440*iday-1; % for NO2, NO, O3
 
-NO = cranox{2}((ibegc2+1440*(iday-1)):(ibegc2+1439*iday));
-NO2 = cranox{3}((ibegc2+1440*(iday-1)):(ibegc2+1439*iday));
-jNO2 = jNO2_raw{2}((ibegc1+1440*(iday-1)):(ibegc1+1439*iday));
-O3 = O3_raw{2}((ibegc2+1440*(iday-1)):(ibegc2+1439*iday));
+hur = meteo{2}(metind); % relative humidity
+ta = meteo{4}(metind); % air temperature [C]
+irrad = meteo{6}(metind); % irradiance
+netirrad = meteo{8}(metind); % net irradiance
+wspeed = meteo{10}(metind); % wind speed [m s-1]
+wdir = meteo{12}(metind); % wind direction [deg]
+ps = meteo{14}(metind); % atmospheric pressure [mbar]
+
+NO = cranox{2}(chemind2);
+NO2 = cranox{3}(chemind2);
+jNO2 = jNO2_raw{2}(chemind1);
+O3 = O3_raw{2}(chemind2);
 end
