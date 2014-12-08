@@ -2,8 +2,15 @@ clear; close all; clc
 outdir = '../ENV-MA11_project_pics';
 %% Model parameters
 kB = 1.380658*1e-19; % Boltzmann's constant [cm-3 hPa K-1 molec-1]
-t0 = 60*60*13; % time of the day [s]
-nt = 60*60*1; % simulation time [s]
+hbeg = 3;
+hend = 20;
+hstep = 0.25; % 0.25 - 15 min, 0.50 - 30 min, 1 - 1 hour
+hsteps = hbeg:hstep:hend;
+it = 0; % t0 loop
+for tstart = hsteps
+it = it + 1
+t0 = 60*60*tstart; % time of the day [s]
+nt = 60*60*0.25; % simulation time [s]
 dt = 10; % time step [s]
 nsteps = numel(t0:dt:nt); % number of time steps
 SCHEME = 2; % 1 - Forward Euler (nt = 1 s, dt = 1e-7 s); 2 - Backward Euler; 3 - MIE (nt = 2000 s, dt = 10 s)
@@ -24,8 +31,9 @@ switch EXPERIMENT
         k1 = 1.4*1e3*exp(1175/T); % O -> O3, this coefficient has already been multiplied by O2 and M
         jNO2 = 1.7*1e-2; % NO2+hv -> NO+O, <420 nm
         k3 = 1.8*1e-12*exp(-1370/T); % NO+O3 -> NO2+O2
-    case 2 % 27 May
-        [T,ps,O3_obs,NO2_obs,NO_obs,jNO2_obs] = MEP_get_obsdata(36);
+    case 2 % date
+        date = '27Apr';
+        [T,ps,O3_obs,NO2_obs,NO_obs,jNO2_obs] = MEP_get_obsdata(38);
         l = find(~isnan(jNO2_obs),1,'first'); % find first point with photolysis (121st), jNO2 counter
         l = max(ceil(t0/60),l); % chose bigger l index with photolysis
         nt = min(t0+nt,(find(~isnan(jNO2_obs),1,'last'))*60); % the last existing point with photolysis 82740, (61 min from the end)
@@ -37,10 +45,10 @@ switch EXPERIMENT
         k = k - 1;
         t0 = max(t0,l*60);
         % Mixing ratios [ppbv]
-        O3 = O3_obs(l); disp(['O3 = ' num2str(O3)])
-        O = 0.; disp(['O = ' num2str(O)])
-        NO2 = NO2_obs(l); disp(['NO2 = ' num2str(NO2)])
-        NO = NO_obs(l); disp(['NO = ' num2str(NO)])
+        O3 = O3_obs(l); %disp(['O3 = ' num2str(O3)])
+        O = 0.; %disp(['O = ' num2str(O)])
+        NO2 = NO2_obs(l); %disp(['NO2 = ' num2str(NO2)])
+        NO = NO_obs(l); %disp(['NO = ' num2str(NO)])
 end
 %% Numerical solution
 switch SCHEME
@@ -89,6 +97,11 @@ switch SCHEME
                         Oback(i+1) = (Oback(i) + dt*jNO2*NO2back(i))/(1 + dt*k1);
                         O3back(i+1) = (O3back(i) + dt*k1*Oback(i))/(1 + dt*k3*NOback(i));
                     end
+                    tmodel(it) = nt;
+                    NO2backlast(it) = NO2back(i+1);
+                    NObacklast(it) = NOback(i+1);
+                    Obacklast(it) = Oback(i+1);
+                    O3backlast(it) = O3back(i+1);                    
             end
     case 3 % MIE
         Np = 30; % limit of number of iterations; 5 for large set of reastions, 30-50 for small set of reactions
@@ -152,6 +165,7 @@ switch SCHEME
             Nmie(i,:) = Nmieback(:);
         end
 end
+end % t0 loop
 %% Plot results
 switch SCHEME
     case 1 % Forward Euler
@@ -186,7 +200,7 @@ switch SCHEME
 %                 set(gcf,'visible','off')
 %                 print(gcf,'-dpng','-r300',imgname);
             case 2 % 27 May
-                figure;
+                figure(1); % plot model data
                 subplot(2,2,1); plot(NO2back(1:end-1),'bd','MarkerSize',3); title('NO2');
                 xlabel('seconds'); ylabel('ppbv'); xlim([1 numel(atimesec)]);
                 set(gca,'XTick',[1 numel(atimesec)],'Xticklabel',[atimesec(1) atimesec(end)]); 
@@ -199,9 +213,29 @@ switch SCHEME
                 subplot(2,2,4); plot(O3back(1:end-1),'bo','MarkerSize',3); title('O3');
                 xlabel('seconds'); ylabel('ppbv'); xlim([1 numel(atimesec)]);
                 set(gca,'XTick',[1 numel(atimesec)],'Xticklabel',[atimesec(1) atimesec(end)]);
-                imgname= strcat(outdir,'/pics_model&obs/','27Apr_backEuler','.png');
+                imgname= strcat(outdir,'/pics_model&obs/',date,'_backEuler_',num2str(hstep),'_part','.png');
 %                 set(gcf,'visible','off')
 %                 print(gcf,'-dpng','-r300',imgname);
+
+                figure(2); % overlay model and observational data
+                subplot(2,2,1); plot(tmodel,NO2backlast,'bd','MarkerSize',3); title('NO2'); hold on;
+                plot(hsteps*60*60,NO2_obs(hbeg*60:hstep*60:hend*60),'r-')
+                xlabel('seconds'); ylabel('ppbv');
+                ylim([min(min(NO2backlast(:)),min(NO2_obs(:))) max(max(NO2backlast(:),max(NO2_obs(:))))])
+                subplot(2,2,2); plot(tmodel,NObacklast,'b^','MarkerSize',3); title('NO'); hold on;
+                plot(hsteps*60*60,NO_obs(hbeg*60:hstep*60:hend*60),'r-')
+                xlabel('seconds'); ylabel('ppbv');
+                ylim([min(min(NObacklast(:)),min(NO_obs(:))) max(max(NObacklast(:),max(NO_obs(:))))])
+                subplot(2,2,3); plot(tmodel,Obacklast,'bs','MarkerSize',3); title('O'); 
+                xlabel('seconds'); ylabel('ppbv');
+                ylim([min(Obacklast(:)) max(Obacklast(:))])
+                subplot(2,2,4); plot(tmodel,O3backlast,'bo','MarkerSize',3); title('O3'); hold on;
+                plot(hsteps*60*60,O3_obs(hbeg*60:hstep*60:hend*60),'r-')
+                xlabel('seconds'); ylabel('ppbv');
+                ylim([min(min(O3backlast(:)),min(O3_obs(:))) max(max(O3backlast(:),max(O3_obs(:))))])
+                imgname= strcat(outdir,'/pics_model&obs/',date,'_backEuler_vs_obs_',num2str(hstep),'_whole','.png');
+%                 set(gcf,'visible','off')
+                print(gcf,'-dpng','-r300',imgname);
         end
     case 3 % MIE
         switch EXPERIMENT
