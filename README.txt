@@ -1,6 +1,6 @@
-This program is intended to solve a set of reactions that affects ozone production and destruction in the tropo- or stratosphere at daytime using Forward Euler, Backward Euler and Multistep Implicit-Explicit numerical schemes.
-The initial set of reactions is the following:
-NO + O3 -> NO2 + O2 (k1)
+This project is intended to solve a set of reactions that controls daytime variations of ozone in the troposphere using forward Euler, backward Euler and Multistep Implicit-Explicit numerical solutions. Comparison of model output with observational data from TORCH 2 in WAO (UEA) is included.
+The set of reactions is the following:
+O -> O3 (k1)
 NO2 + hv -> NO + O (J)
-O -> O3 (k3)
-This is a null cycle with no net formation of O3.
+NO + O3 -> NO2 + O2 (k3)
+This is so called null cycle, with no net formation of O3.
