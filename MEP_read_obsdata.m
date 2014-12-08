@@ -47,8 +47,6 @@ jNO2_raw{1} = jNO2_raw{1} - 1.5; % getting real dates
 jNO2_raw{2}(jNO2_raw{2}==9999) = NaN;
 jNO2_raw{2}(jNO2_raw{3}~=0) = NaN;
 jNO2 = jNO2_raw{2};
-%% julian2greg convector
-%[year,month,day,hour,min,sec,dayweek] = julian2greg(116.9548611);
 %% Plot observational data
 % Time of the day in source files: night - 0.0, day - 0.5. Time of the day here (real): night - 0.5, day - 0.0
 % Start/end dates and their indices:
