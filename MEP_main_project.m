@@ -2,26 +2,23 @@ clear; close all; clc
 outdir = '../ENV-MA11_project_pics';
 %% Model parameters
 kB = 1.380658*1e-19; % Boltzmann's constant [cm-3 hPa K-1 molec-1]
-hbeg = 3;
-hend = 20;
-hstep = 0.25; % 0.25 - 15 min, 0.50 - 30 min, 1 - 1 hour
+hbeg = 3; % the first hour of a series of simulations
+hend = 20; % the last hour of a series of simulations
+hstep = 0.50; % 0.25 - 15 min, 0.50 - 30 min, 1.00 - 1 hour
 hsteps = hbeg:hstep:hend;
 it = 0; % t0 loop
 for tstart = hsteps
-it = it + 1
-t0 = 60*60*tstart; % time of the day [s]
-nt = 60*60*0.25; % simulation time [s]
+it = it + 1;
+t0 = 60*60*tstart; % initial time [s]
+nt = 60*60*0.50; % simulation time [s]
 dt = 10; % time step [s]
-nsteps = numel(t0:dt:nt); % number of time steps
+nsteps = numel(t0:dt:nt);
 SCHEME = 2; % 1 - Forward Euler (nt = 1 s, dt = 1e-7 s); 2 - Backward Euler; 3 - MIE (nt = 2000 s, dt = 10 s)
 %% Initial condtions
 EXPERIMENT  = 2;
 switch EXPERIMENT
     case 1 % test
         T = 298.; % air temperature [Kelvin], ~= 25 degrees Celsius
-%         p = 1013.25; % air pressure [hPa], == 1 atm (standard atmosphere)
-%         M = p/(kB*T);
-%         O2 = 0.2095*M; % assuming O2 mixiting ratio = 0.2095 and the air is dry
         % Number densities (concentrations) [molec cm-3]
         O3 = 0.;
         O = 0.;
@@ -32,11 +29,12 @@ switch EXPERIMENT
         jNO2 = 1.7*1e-2; % NO2+hv -> NO+O, <420 nm
         k3 = 1.8*1e-12*exp(-1370/T); % NO+O3 -> NO2+O2
     case 2 % date
-        date = '27Apr';
-        [T,ps,O3_obs,NO2_obs,NO_obs,jNO2_obs] = MEP_get_obsdata(38);
-        l = find(~isnan(jNO2_obs),1,'first'); % find first point with photolysis (121st), jNO2 counter
-        l = max(ceil(t0/60),l); % chose bigger l index with photolysis
-        nt = min(t0+nt,(find(~isnan(jNO2_obs),1,'last'))*60); % the last existing point with photolysis 82740, (61 min from the end)
+        % Get observational data for a particular date
+        datename = '30Apr'; date = 9;
+        [T,ps,O3_obs,NO2_obs,NO_obs,jNO2_obs] = MEP_get_obsdata(date);
+        l = find(~isnan(jNO2_obs),1,'first'); % find the first point with photolysis, jNO2 counter
+        l = max(ceil(t0/60),l);
+        nt = min(t0+nt,(find(~isnan(jNO2_obs),1,'last'))*60); % the last existing point with photolysis
         while mod(l,10) ~= 0
             l = l + 1;
         end
@@ -98,7 +96,7 @@ switch SCHEME
                         O3back(i+1) = (O3back(i) + dt*k1*Oback(i))/(1 + dt*k3*NOback(i));
                     end
                     tmodel(it) = nt;
-                    NO2backlast(it) = NO2back(i+1);
+                    NO2backlast(it) = NO2back(i+1); % get the last points of a simulation
                     NObacklast(it) = NOback(i+1);
                     Obacklast(it) = Oback(i+1);
                     O3backlast(it) = O3back(i+1);                    
@@ -173,32 +171,40 @@ switch SCHEME
             case 1 % test
                 figure; xend = 1e7;
                 subplot(2,2,1); plot(NO2forw(1:end-1),'ko','MarkerSize',3); title('NO2');
-                xlabel('seconds'); ylabel('molecules cm-3'); set(gca,'Xtick',linspace(0,1e7,3),'XTickLabel',0:0.5:1); xlim([0 xend])
+                xlabel('seconds'); ylabel('molecules cm-3'); xlim([0 xend])
+                set(gca,'Xtick',linspace(0,1e7,3),'XTickLabel',0:0.5:1); 
                 subplot(2,2,2); plot(NOforw(1:end-1),'ks','MarkerSize',3); title('NO');
-                xlabel('seconds'); ylabel('molecules cm-3'); set(gca,'Xtick',linspace(0,1e7,3),'XTickLabel',0:0.5:1); xlim([0 xend])
+                xlabel('seconds'); ylabel('molecules cm-3'); xlim([0 xend])
+                set(gca,'Xtick',linspace(0,1e7,3),'XTickLabel',0:0.5:1); 
                 subplot(2,2,3); plot(Oforw(1:end-1),'k^','MarkerSize',3); title('O');
-                xlabel('seconds'); ylabel('molecules cm-3'); set(gca,'Xtick',linspace(0,1e7,3),'XTickLabel',0:0.5:1); xlim([0 xend])
+                xlabel('seconds'); ylabel('molecules cm-3'); xlim([0 xend])
+                set(gca,'Xtick',linspace(0,1e7,3),'XTickLabel',0:0.5:1); 
                 subplot(2,2,4); plot(O3forw(1:end-1),'kd','MarkerSize',3); title('O3');
-                xlabel('seconds'); ylabel('molecules cm-3'); set(gca,'Xtick',linspace(0,1e7,3),'XTickLabel',0:0.5:1); xlim([0 xend])
+                xlabel('seconds'); ylabel('molecules cm-3'); xlim([0 xend])
+                set(gca,'Xtick',linspace(0,1e7,3),'XTickLabel',0:0.5:1); 
                 imgname= strcat(outdir,'/pics_test/','test_forwEuler','.png');
-%                 set(gcf,'visible','off')
-%                 print(gcf,'-dpng','-r300',imgname);
+                set(gcf,'visible','off')
+                print(gcf,'-dpng','-r300',imgname);
         end
     case 2 % Backward Euler
         switch EXPERIMENT
             case 1 % test
                 figure;
                 subplot(2,2,1); plot(NO2back(1:end-1),'bd','MarkerSize',3); title('NO2');
-                xlabel('seconds'); ylabel('molecules cm-3'); set(gca,'Xtick',0:50:200,'XTickLabel',0:500:2000); xlim([0 nsteps-1]);
+                xlabel('seconds'); ylabel('molecules cm-3'); xlim([0 nsteps-1]);
+                set(gca,'Xtick',0:50:200,'XTickLabel',0:500:2000); 
                 subplot(2,2,2); plot(NOback(1:end-1),'b^','MarkerSize',3); title('NO');
-                xlabel('seconds'); ylabel('molecules cm-3'); set(gca,'Xtick',0:50:200,'XTickLabel',0:500:2000); xlim([0 nsteps-1]);
+                xlabel('seconds'); ylabel('molecules cm-3'); xlim([0 nsteps-1]);
+                set(gca,'Xtick',0:50:200,'XTickLabel',0:500:2000); 
                 subplot(2,2,3); plot(Oback(1:end-1),'bs','MarkerSize',3); title('O');
-                xlabel('seconds'); ylabel('molecules cm-3'); set(gca,'Xtick',0:50:200,'XTickLabel',0:500:2000); xlim([0 nsteps-1]);
+                xlabel('seconds'); ylabel('molecules cm-3'); xlim([0 nsteps-1]);
+                set(gca,'Xtick',0:50:200,'XTickLabel',0:500:2000); 
                 subplot(2,2,4); plot(O3back(1:end-1),'bo','MarkerSize',3); title('O3');
-                xlabel('seconds'); ylabel('molecules cm-3'); set(gca,'Xtick',0:50:200,'XTickLabel',0:500:2000); xlim([0 nsteps-1]);
+                xlabel('seconds'); ylabel('molecules cm-3'); xlim([0 nsteps-1]);
+                set(gca,'Xtick',0:50:200,'XTickLabel',0:500:2000); 
                 imgname= strcat(outdir,'/pics_test/','test_backEuler','.png');
-%                 set(gcf,'visible','off')
-%                 print(gcf,'-dpng','-r300',imgname);
+                set(gcf,'visible','off')
+                print(gcf,'-dpng','-r300',imgname);
             case 2 % 27 May
                 figure(1); % plot model data
                 subplot(2,2,1); plot(NO2back(1:end-1),'bd','MarkerSize',3); title('NO2');
@@ -213,44 +219,52 @@ switch SCHEME
                 subplot(2,2,4); plot(O3back(1:end-1),'bo','MarkerSize',3); title('O3');
                 xlabel('seconds'); ylabel('ppbv'); xlim([1 numel(atimesec)]);
                 set(gca,'XTick',[1 numel(atimesec)],'Xticklabel',[atimesec(1) atimesec(end)]);
-                imgname= strcat(outdir,'/pics_model&obs/',date,'_backEuler_',num2str(hstep),'_part','.png');
-%                 set(gcf,'visible','off')
-%                 print(gcf,'-dpng','-r300',imgname);
+                imgname= strcat(outdir,'/pics_model&obs/',datename,'_backEuler_',num2str(hstep),'_part','.png');
+                set(gcf,'visible','off')
+                print(gcf,'-dpng','-r300',imgname);
 
-                figure(2); % overlay model and observational data
+                figure(2); % overlay observational data and model data every fixed period of time
                 subplot(2,2,1); plot(tmodel,NO2backlast,'bd','MarkerSize',3); title('NO2'); hold on;
-                plot(hsteps*60*60,NO2_obs(hbeg*60:hstep*60:hend*60),'r-')
+                plot(hbeg*60*60:60:hend*60*60,NO2_obs(hbeg*60:1:hend*60),'r-')
                 xlabel('seconds'); ylabel('ppbv');
                 ylim([min(min(NO2backlast(:)),min(NO2_obs(:))) max(max(NO2backlast(:),max(NO2_obs(:))))])
                 subplot(2,2,2); plot(tmodel,NObacklast,'b^','MarkerSize',3); title('NO'); hold on;
-                plot(hsteps*60*60,NO_obs(hbeg*60:hstep*60:hend*60),'r-')
+                plot(hbeg*60*60:60:hend*60*60,NO_obs(hbeg*60:1:hend*60),'r-')
                 xlabel('seconds'); ylabel('ppbv');
                 ylim([min(min(NObacklast(:)),min(NO_obs(:))) max(max(NObacklast(:),max(NO_obs(:))))])
                 subplot(2,2,3); plot(tmodel,Obacklast,'bs','MarkerSize',3); title('O'); 
                 xlabel('seconds'); ylabel('ppbv');
                 ylim([min(Obacklast(:)) max(Obacklast(:))])
                 subplot(2,2,4); plot(tmodel,O3backlast,'bo','MarkerSize',3); title('O3'); hold on;
-                plot(hsteps*60*60,O3_obs(hbeg*60:hstep*60:hend*60),'r-')
+                plot(hbeg*60*60:60:hend*60*60,O3_obs(hbeg*60:1:hend*60),'r-')
                 xlabel('seconds'); ylabel('ppbv');
                 ylim([min(min(O3backlast(:)),min(O3_obs(:))) max(max(O3backlast(:),max(O3_obs(:))))])
-                imgname= strcat(outdir,'/pics_model&obs/',date,'_backEuler_vs_obs_',num2str(hstep),'_whole','.png');
-%                 set(gcf,'visible','off')
+                imgname= strcat(outdir,'/pics_model&obs/',datename,'_backEuler_vs_obs_',num2str(hstep),'_whole','.png');
+                set(gcf,'visible','off')
                 print(gcf,'-dpng','-r300',imgname);
         end
     case 3 % MIE
         switch EXPERIMENT
             case 1 %test
                 figure;
-                subplot(2,2,1); plot(Nmie(1:end-1,1),'rd','MarkerSize',3); title('NO2'); hold on; plot(NO2back(1:end-1),'bd','MarkerSize',3);
-                xlabel('seconds'); ylabel('molecules cm-3'); set(gca,'Xtick',0:50:200,'XTickLabel',0:500:2000); xlim([0 nsteps-1]);
-                subplot(2,2,2); plot(Nmie(1:end-1,2),'r^','MarkerSize',3); title('NO'); hold on; plot(NOback(1:end-1),'b^','MarkerSize',3);
-                xlabel('seconds'); ylabel('molecules cm-3'); set(gca,'Xtick',0:50:200,'XTickLabel',0:500:2000); xlim([0 nsteps-1]);
-                subplot(2,2,3); plot(Nmie(1:end-1,3),'rs','MarkerSize',3); title('O'); hold on; plot(Oback(1:end-1),'bs','MarkerSize',3);
-                xlabel('seconds'); ylabel('molecules cm-3'); set(gca,'Xtick',0:50:200,'XTickLabel',0:500:2000); xlim([0 nsteps-1]);
-                subplot(2,2,4); plot(Nmie(1:end-1,4),'ro','MarkerSize',3); title('O3'); hold on; plot(O3back(1:end-1),'bo','MarkerSize',3);
-                xlabel('seconds'); ylabel('molecules cm-3'); set(gca,'Xtick',0:50:200,'XTickLabel',0:500:2000); xlim([0 nsteps-1]);
+                subplot(2,2,1); plot(Nmie(1:end-1,1),'rd','MarkerSize',3); title('NO2'); hold on;
+                plot(NO2back(1:end-1),'bd','MarkerSize',3);
+                xlabel('seconds'); ylabel('molecules cm-3'); xlim([0 nsteps-1]);
+                set(gca,'Xtick',0:50:200,'XTickLabel',0:500:2000); 
+                subplot(2,2,2); plot(Nmie(1:end-1,2),'r^','MarkerSize',3); title('NO'); hold on;
+                plot(NOback(1:end-1),'b^','MarkerSize',3);
+                xlabel('seconds'); ylabel('molecules cm-3'); xlim([0 nsteps-1]);
+                set(gca,'Xtick',0:50:200,'XTickLabel',0:500:2000); 
+                subplot(2,2,3); plot(Nmie(1:end-1,3),'rs','MarkerSize',3); title('O'); hold on;
+                plot(Oback(1:end-1),'bs','MarkerSize',3);
+                xlabel('seconds'); ylabel('molecules cm-3'); xlim([0 nsteps-1]);
+                set(gca,'Xtick',0:50:200,'XTickLabel',0:500:2000); 
+                subplot(2,2,4); plot(Nmie(1:end-1,4),'ro','MarkerSize',3); title('O3'); hold on;
+                plot(O3back(1:end-1),'bo','MarkerSize',3);
+                xlabel('seconds'); ylabel('molecules cm-3'); xlim([0 nsteps-1]);
+                set(gca,'Xtick',0:50:200,'XTickLabel',0:500:2000); 
                 imgname= strcat(outdir,'/pics_test/','test_mie&backEuler','.png');
-%                 set(gcf,'visible','off')
-%                 print(gcf,'-dpng','-r300',imgname);
+                set(gcf,'visible','off')
+                print(gcf,'-dpng','-r300',imgname);
         end
 end
