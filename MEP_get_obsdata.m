@@ -3,7 +3,7 @@ indir = '../ENV-MA11_project_obsdata';
 fid = fopen([indir,'/','uea-wao-met_weybourne_20040101_met.txt'],'r');
 meteo = textscan(fid, '%f %f %d %f %d %f %d %f %d %f %d %f %d %f %d', 'headerLines', 33);
 fclose(fid);
-meteo{1} = meteo{1} - 1.5; % getting real dates
+meteo{1} = meteo{1} - 1.5; % get real dates
 meteo{2}(meteo{2}==9999.999) = NaN; meteo{2}(meteo{3}==3) = NaN;
 meteo{4}(meteo{4}==9999.999) = NaN; meteo{4}(meteo{5}==3) = NaN;
 meteo{6}(meteo{6}==9999.999) = NaN; meteo{6}(meteo{7}==3) = NaN;
@@ -15,20 +15,20 @@ meteo{14}(meteo{14}==9999.999) = NaN; meteo{14}(meteo{15}==3) = NaN;
 fid = fopen([indir,'/','uea-o3_weybourne_20040419_ver1.txt'],'r');
 O3_raw = textscan(fid, '%f %f %d', 'headerLines', 21);
 fclose(fid);
-O3_raw{1} = O3_raw{1} - 1.5; % getting real dates
+O3_raw{1} = O3_raw{1} - 1.5; % get real dates
 O3_raw{2}(O3_raw{2}==9999) = NaN;
 %% Read UEA CraNOx data
 fid = fopen([indir,'/','uea-cranox_weybourne_20040419_ver1.txt'],'r');
 cranox = textscan(fid, '%f %f %f', 'headerLines', 21);
 fclose(fid);
-cranox{1} = cranox{1} - 1.5; % getting real dates
+cranox{1} = cranox{1} - 1.5; % get real dates
 cranox{2}(cranox{2}==9999 | cranox{2} < 0) = NaN;
 cranox{3}(cranox{3}==9999 | cranox{3} < 0) = NaN;
 %% Read Filter Radiometer j(NO2) data
 fid = fopen([indir,'/','leic_fr_jno2_weybourne_20040421.txt'],'r');
 jNO2_raw = textscan(fid, '%f %f %d', 'headerLines', 26);
 fclose(fid);
-jNO2_raw{1} = jNO2_raw{1} - 1.5; % getting real dates
+jNO2_raw{1} = jNO2_raw{1} - 1.5; % get real dates
 jNO2_raw{2}(jNO2_raw{2}==9999) = NaN;
 jNO2_raw{2}(jNO2_raw{3}~=0) = NaN;
 %% Select day
